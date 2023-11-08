@@ -21,6 +21,22 @@ public class MessageBoardClient
 
             System.out.println("You are now connected to the message board. Type messages below:");
 
+            Thread receiveThread = new Thread(() -> {
+                try
+                {
+                    String message;
+                    while ((message = in.readLine()) != null)
+                    {
+                        System.out.println(message);
+                    }
+                }
+                catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
+            });
+            receiveThread.start();
+
             String message;
             while (true)
             {
