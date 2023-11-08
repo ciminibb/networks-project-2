@@ -1,8 +1,11 @@
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 
 public final class MessageBoardServer
 {
+    private static final ArrayList<PrintWriter> clientWriters = new ArrayList<>();
+
     public static void main(String[] args)
     {
         int serverPort = 42069; // nice
@@ -14,6 +17,9 @@ public final class MessageBoardServer
             while (true)
             {
                 Socket clientSocket = serverSocket.accept();
+
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+                clientWriters.add(out);
                 // new ClientHandler(clientSocket).start();
                 ClientHandler clientHandler = new ClientHandler(clientSocket);
                 Thread clientThread = new Thread(clientHandler);
@@ -29,21 +35,28 @@ public final class MessageBoardServer
     static class ClientHandler extends Thread
     {
         private final Socket clientSocket;
-        private PrintWriter out;
+        private final PrintWriter out;
+        private String username;
 
-        public ClientHandler(Socket socket)
-        {
+        public ClientHandler(Socket socket) {
             this.clientSocket = socket;
+            try
+            {
+                out = new PrintWriter(clientSocket.getOutputStream(), true);
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+                throw new RuntimeException("Error creating client writer.");
+            }
         }
 
         public void run() {
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);)
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream())))
             {
-                this.out = out;
 
                 // Handle the client connection
-                String username = in.readLine();
+                username = in.readLine();
                 System.out.println("User '" + username + "' connected.");
 
                 String message;
@@ -68,13 +81,16 @@ public final class MessageBoardServer
                 {
                     e.printStackTrace();
                 }
+                clientWriters.remove(out);
             }
         }
 
         private void broadcastMessage(String message)
         {
-            // Implement broadcasting to all connected clients
-            // Loop through all client threads and send the message using this.out
+            for (PrintWriter client : clientWriters)
+            {
+                client.println(message);
+            }
         }
     }
 }
