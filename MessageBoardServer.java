@@ -6,14 +6,15 @@ import java.text.SimpleDateFormat;
 public final class MessageBoardServer {
     private static final ArrayList<PrintWriter> clientWriters = new ArrayList<>();
     private static final Map<Integer, Message> messages = new HashMap<>();
+    private static final Set<String> activeUsers = Collections.synchronizedSet(new HashSet<>());
     private static int messageID = 0;
 
     public static void main(String[] args) {
         int serverPort = 42069; // nice
-        
+
         try (ServerSocket serverSocket = new ServerSocket(serverPort)) {
             System.out.println("Message Board Server started on port " + serverPort);
-            
+
             while (true) {
                 Socket clientSocket = serverSocket.accept();
 
@@ -46,7 +47,8 @@ public final class MessageBoardServer {
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
                 username = in.readLine();
-                System.out.println("User '" + username + "' connected.");
+                activeUsers.add(username);
+                broadcastUserStatus(username, "joined");
 
                 String line;
                 while ((line = in.readLine()) != null) {
@@ -74,6 +76,8 @@ public final class MessageBoardServer {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+                activeUsers.remove(username);
+                broadcastUserStatus(username, "left");
                 clientWriters.remove(out);
             }
         }
@@ -81,6 +85,14 @@ public final class MessageBoardServer {
         private void broadcastMessage(String message) {
             for (PrintWriter client : clientWriters) {
                 client.println(message);
+            }
+        }
+
+        private void broadcastUserStatus(String username, String status) {
+            String statusMessage = "User '" + username + "' " + status + " the group.";
+            System.out.println(statusMessage);
+            for (PrintWriter client : clientWriters) {
+                client.println(statusMessage);
             }
         }
     }
