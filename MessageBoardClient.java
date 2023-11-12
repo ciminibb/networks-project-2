@@ -17,7 +17,7 @@ public class MessageBoardClient {
             out.println(username);
 
             System.out.println("You are now connected to the message board.");
-            System.out.println("Type 'GET' to retrieve a message by ID or type your message subject below:");
+            System.out.println("Type 'POST' to write a message or 'GET' to retrieve one.");
 
             Thread receiveThread = new Thread(() -> {
                 try {
@@ -37,13 +37,15 @@ public class MessageBoardClient {
                     System.out.print("Enter message ID: ");
                     String id = scanner.nextLine();
                     out.println("GET_MESSAGE:" + id);
-                    System.out.println("Type 'GET' to retrieve a message by ID or type your message subject below:");
-                } else {
-                    out.println(line); // Send subject
-                    System.out.println("Enter your message:");
+                } else if (line.equalsIgnoreCase("POST")) {
+                    System.out.print("Enter message subject: ");
+                    String subject = scanner.nextLine();
+                    out.println(subject); // Send subject
+                    System.out.print("Enter message content: ");
                     String content = scanner.nextLine();
-                    out.println(content); // Send content
-                    System.out.println("Type 'GET' to retrieve a message by ID or type your message subject below:");
+                    out.println(content); // Send subject
+                } else {
+                    System.out.println("Type 'POST' to write a message or 'GET' to retrieve one.");
                 }
             }
         } catch (IOException e) {
