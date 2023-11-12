@@ -50,6 +50,13 @@ public final class MessageBoardServer {
                 activeUsers.add(username);
                 broadcastUserStatus(username, "joined");
 
+                // Show new user the last 2 messages.
+                if (messages.size() != 0) { // Skip if no messages
+                    for (int i = 1; i > -1; i--) {
+                        out.println(messages.get(messages.size() - i).getDisplayString());
+                    }
+                }
+
                 String line;
                 while ((line = in.readLine()) != null) {
                     if (line.startsWith("GET_MESSAGE:")) {
