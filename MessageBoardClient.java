@@ -43,7 +43,7 @@ public class MessageBoardClient {
                     out.println(subject); // Send subject
                     System.out.print("Enter message content: ");
                     String content = scanner.nextLine();
-                    out.println(content); // Send subject
+                    out.println(content); // Send content
                 } else {
                     System.out.println("Type 'POST' to write a message or 'GET' to retrieve one.");
                 }
