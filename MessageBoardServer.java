@@ -46,16 +46,29 @@ public final class MessageBoardServer {
 
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-                username = in.readLine();
-                activeUsers.add(username);
-                broadcastUserStatus(username, "joined");
+                // Show new user all active members.
+                if (activeUsers.size() != 0) { // Skip if no active users
+                    out.println("Active users:");
+                    for (String user : activeUsers) {
+                        out.println(user);
+                    }
+
+                    out.println("");
+                }
 
                 // Show new user the last 2 messages.
                 if (messages.size() != 0) { // Skip if no messages
+                    out.println("Chat history:");
                     for (int i = 1; i > -1; i--) {
                         out.println(messages.get(messages.size() - i).getDisplayString());
                     }
+
+                    out.println("");
                 }
+                
+                username = in.readLine();
+                activeUsers.add(username);
+                broadcastUserStatus(username, "joined");
 
                 String line;
                 while ((line = in.readLine()) != null) {

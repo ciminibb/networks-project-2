@@ -18,6 +18,7 @@ public class MessageBoardClient {
 
             System.out.println("You are now connected to the message board.");
             System.out.println("Type 'POST' to write a message or 'GET' to retrieve one.");
+            System.out.println("");
 
             Thread receiveThread = new Thread(() -> {
                 try {
