@@ -8,8 +8,17 @@ public final class MessageBoardServer {
     private static final Map<Integer, Message> messages = new HashMap<>();
     private static final Set<String> activeUsers = Collections.synchronizedSet(new HashSet<>());
     private static int messageID = 0;
+    private static final Map<Integer, String> groups = new HashMap<>(); // Key/value pairs representing
+                                                                        // groups by ID and name.
 
     public static void main(String[] args) {
+        // Hard code 5 groups with the map's put method.
+        groups.put(1, "Bengals Fans");
+        groups.put(2, "Jujutsu Kaisen Fans");
+        groups.put(3, "Lunch Enjoyers");
+        groups.put(4, "Classical Studies Discourse");
+        groups.put(5, "Stories of Jury Duty"); // Changing these is off limits
+        
         int serverPort = 42069; // nice
 
         try (ServerSocket serverSocket = new ServerSocket(serverPort)) {
@@ -46,6 +55,17 @@ public final class MessageBoardServer {
 
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
+                // Show new user all groups.
+                out.println("Groups:");
+                for (Map.Entry<Integer, String> group : groups.entrySet()) {
+                    out.println(group.getKey() + " " + group.getValue());
+                }
+
+                out.println("");
+
+                // THE OUTPUTS BELOW MUST BE DELAYED UNTIL GROUPS ARE SELECTED, THEN ADJUSTED
+                // PER THE GROUPS JOINED!
+                
                 // Show new user all active members.
                 if (activeUsers.size() != 0) { // Skip if no active users
                     out.println("Active users:");
