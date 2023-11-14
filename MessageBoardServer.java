@@ -60,21 +60,13 @@ public final class MessageBoardServer {
 
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-                // Show new user all groups and prompt them to join some.
-                out.println("Enter groups to join, as a comma-separated list, from those below.");
+                // Show new user all groups.
+                out.println("Groups:");
                 for (Map.Entry<String, String> group : groups.entrySet()) {
                     out.println(group.getKey() + " " + group.getValue());
                 }
 
                 out.println("");
-
-                // Process the groups to be joined.
-                String groupsToJoin = in.readLine();
-                join(groupsToJoin);
-
-                for (String group : groupsJoined) {
-                    out.println(group);
-                }
                 
                 // Show new user all active members.
                 if (activeUsers.size() != 0) { // Skip if no active users
@@ -109,6 +101,14 @@ public final class MessageBoardServer {
                             out.println(requestedMessage);
                         } else {
                             out.println("Message not found");
+                        }
+                    } else if (line.startsWith("JOIN:")) {
+                        String groupsToJoin = line.split(":")[1];
+                        join(groupsToJoin);
+
+                        // OUTPUT FOR TESTING
+                        for (String group : groupsJoined) {
+                            out.println(group);
                         }
                     } else {
                         String subject = line;
@@ -165,7 +165,7 @@ public final class MessageBoardServer {
 
                     // Resolve <cleanGroup> to ID.
                     for (Map.Entry<String, String> group : groups.entrySet()) {
-                        if (group.getValue() == cleanGroup) {
+                        if (cleanGroup.equals(group.getValue())) {
                             cleanGroup = group.getKey();
                         }
                     }

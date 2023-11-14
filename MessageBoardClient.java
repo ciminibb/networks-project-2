@@ -45,6 +45,10 @@ public class MessageBoardClient {
                     System.out.print("Enter message content: ");
                     String content = scanner.nextLine();
                     out.println(content); // Send content
+                } else if (line.equalsIgnoreCase("JOIN")) {
+                    System.out.print("Enter comma-separated groups: ");
+                    String groups = scanner.nextLine();
+                    out.println("JOIN:" + groups); // Send groups
                 } else {
                     System.out.println("Type 'POST' to write a message or 'GET' to retrieve one.");
                 }
