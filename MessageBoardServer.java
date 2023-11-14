@@ -79,13 +79,17 @@ public final class MessageBoardServer {
                 }
 
                 // Show new user the last 2 messages.
-                if (messages.size() != 0) { // Skip if no messages
+                if (messages.size() > 1) { // Skip if no messages, simple output if 1
                     out.println("Chat history:");
                     for (int i = 1; i > -1; i--) {
                         out.println(messages.get(messages.size() - i).getDisplayString());
                     }
 
                     out.println("");
+                }
+                if (messages.size() != 0) {
+                    out.println("Chat history:");
+                    out.println(messages.get(1).getDisplayString());
                 }
                 
                 username = in.readLine();
