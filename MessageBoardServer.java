@@ -8,16 +8,18 @@ public final class MessageBoardServer {
     private static final Map<Integer, Message> messages = new HashMap<>();
     private static final Set<String> activeUsers = Collections.synchronizedSet(new HashSet<>());
     private static int messageID = 0;
-    private static final Map<Integer, String> groups = new HashMap<>(); // Key/value pairs representing
-                                                                        // groups by ID and name.
+    private static final Map<String, String> groups = new HashMap<>(); // Key/value pairs representing
+                                                                       // groups by ID and name. IDs
+                                                                       // are strings to join method
+                                                                       // simpler.
 
     public static void main(String[] args) {
         // Hard code 5 groups with the map's put method.
-        groups.put(1, "Bengals Fans");
-        groups.put(2, "Jujutsu Kaisen Fans");
-        groups.put(3, "Lunch Enjoyers");
-        groups.put(4, "Classical Studies Discourse");
-        groups.put(5, "Stories of Jury Duty"); // Changing these is off limits
+        groups.put("1", "Bengals Fans");
+        groups.put("2", "Jujutsu Kaisen Fans");
+        groups.put("3", "Lunch Enjoyers");
+        groups.put("4", "Classical Studies Discourse");
+        groups.put("5", "Stories of Jury Duty"); // Changing these is off limits
         
         int serverPort = 42069; // nice
 
@@ -42,6 +44,9 @@ public final class MessageBoardServer {
         private final Socket clientSocket;
         private final PrintWriter out;
         private String username;
+        private ArrayList<String> groupsJoined = new ArrayList<>(); // A list, local to each thread
+                                                                    // (user), that holds the groups
+                                                                    // joined
 
         public ClientHandler(Socket socket) {
             this.clientSocket = socket;
@@ -55,16 +60,21 @@ public final class MessageBoardServer {
 
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
-                // Show new user all groups.
-                out.println("Groups:");
-                for (Map.Entry<Integer, String> group : groups.entrySet()) {
+                // Show new user all groups and prompt them to join some.
+                out.println("Enter groups to join, as a comma-separated list, from those below.");
+                for (Map.Entry<String, String> group : groups.entrySet()) {
                     out.println(group.getKey() + " " + group.getValue());
                 }
 
                 out.println("");
 
-                // THE OUTPUTS BELOW MUST BE DELAYED UNTIL GROUPS ARE SELECTED, THEN ADJUSTED
-                // PER THE GROUPS JOINED!
+                // Process the groups to be joined.
+                String groupsToJoin = in.readLine();
+                join(groupsToJoin);
+
+                for (String group : groupsJoined) {
+                    out.println(group);
+                }
                 
                 // Show new user all active members.
                 if (activeUsers.size() != 0) { // Skip if no active users
@@ -133,6 +143,38 @@ public final class MessageBoardServer {
             System.out.println(statusMessage);
             for (PrintWriter client : clientWriters) {
                 client.println(statusMessage);
+            }
+        }
+
+        private void join(String groupsToJoinString) {
+            // Move each comma-separated group to an array element.
+            String[] groupsToJoinArray = groupsToJoinString.split(",");
+
+            for (String dirtyGroup : groupsToJoinArray) {
+                // "Clean" groups by removing whitespace.
+                String cleanGroup = dirtyGroup.trim();
+
+                // Resolve each <cleanGroup> to an ID. In the process, monitor whether the
+                // <cleanGroup> actually exists.
+                boolean groupExists = false;
+                if (groups.containsKey(cleanGroup)) {
+                    groupExists = true;
+                }
+                if (groups.containsValue(cleanGroup)) {
+                    groupExists = true;
+
+                    // Resolve <cleanGroup> to ID.
+                    for (Map.Entry<String, String> group : groups.entrySet()) {
+                        if (group.getValue() == cleanGroup) {
+                            cleanGroup = group.getKey();
+                        }
+                    }
+                }
+
+                // Users can only join an existing group that they aren't already in.
+                if (groupExists && !groupsJoined.contains(cleanGroup)) {
+                    groupsJoined.add(cleanGroup);
+                }
             }
         }
     }
