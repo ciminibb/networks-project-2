@@ -8,16 +8,20 @@ public final class MessageBoardServer {
     private static final Map<Integer, Message> messages = new HashMap<>();
     private static final Set<String> activeUsers = Collections.synchronizedSet(new HashSet<>());
     private static int messageID = 0;
-    private static final Map<Integer, String> groups = new HashMap<>(); // Key/value pairs representing
-                                                                        // groups by ID and name.
+    private static final Map<String, String> groups = new HashMap<>(); // Key/value pairs representing
+                                                                       // groups by ID and name. IDs
+                                                                       // are strings to join method
+                                                                       // simpler.
+    private static final Map<String, ArrayList<String>> members = new HashMap<>(); // Mapping of group IDs to
+                                                                                   // lists of usernames.
 
     public static void main(String[] args) {
         // Hard code 5 groups with the map's put method.
-        groups.put(1, "Bengals Fans");
-        groups.put(2, "Jujutsu Kaisen Fans");
-        groups.put(3, "Lunch Enjoyers");
-        groups.put(4, "Classical Studies Discourse");
-        groups.put(5, "Stories of Jury Duty"); // Changing these is off limits
+        groups.put("1", "Bengals Fans");
+        groups.put("2", "Jujutsu Kaisen Fans");
+        groups.put("3", "Lunch Enjoyers");
+        groups.put("4", "Classical Studies Discourse");
+        groups.put("5", "Stories of Jury Duty"); // Changing these is off limits
         
         int serverPort = 42069; // nice
 
@@ -42,6 +46,9 @@ public final class MessageBoardServer {
         private final Socket clientSocket;
         private final PrintWriter out;
         private String username;
+        private ArrayList<String> groupsJoined = new ArrayList<>(); // A list, local to each thread
+                                                                    // (user), that holds the groups
+                                                                    // joined
 
         public ClientHandler(Socket socket) {
             this.clientSocket = socket;
@@ -57,14 +64,11 @@ public final class MessageBoardServer {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) {
                 // Show new user all groups.
                 out.println("Groups:");
-                for (Map.Entry<Integer, String> group : groups.entrySet()) {
+                for (Map.Entry<String, String> group : groups.entrySet()) {
                     out.println(group.getKey() + " " + group.getValue());
                 }
 
                 out.println("");
-
-                // THE OUTPUTS BELOW MUST BE DELAYED UNTIL GROUPS ARE SELECTED, THEN ADJUSTED
-                // PER THE GROUPS JOINED!
                 
                 // Show new user all active members.
                 if (activeUsers.size() != 0) { // Skip if no active users
@@ -77,18 +81,20 @@ public final class MessageBoardServer {
                 }
 
                 // Show new user the last 2 messages.
-                if (messages.size() != 0) { // Skip if no messages
+                if (messages.size() > 1) { // Skip if no messages, simple output if 1
                     out.println("Chat history:");
                     for (int i = 1; i > -1; i--) {
                         out.println(messages.get(messages.size() - i).getDisplayString());
                     }
 
                     out.println("");
+                } else if (messages.size() != 0) {
+                    out.println("Chat history:");
+                    out.println(messages.get(1).getDisplayString());
                 }
                 
                 username = in.readLine();
                 activeUsers.add(username);
-                broadcastUserStatus(username, "joined");
 
                 String line;
                 while ((line = in.readLine()) != null) {
@@ -99,6 +105,17 @@ public final class MessageBoardServer {
                             out.println(requestedMessage);
                         } else {
                             out.println("Message not found");
+                        }
+                    } else if (line.startsWith("JOIN:")) {
+                        String groupsToJoin = line.split(":")[1];
+                        join(groupsToJoin);
+
+                        broadcastUserStatus(username, "joined", groupsJoined);
+
+                        // Show user members of their groups.
+                        for (String group : groupsJoined) {
+                            out.printf("Members of group %s: ", group);
+                            out.println(getMembers(group));
                         }
                     } else {
                         String subject = line;
@@ -117,7 +134,7 @@ public final class MessageBoardServer {
                     e.printStackTrace();
                 }
                 activeUsers.remove(username);
-                broadcastUserStatus(username, "left");
+                broadcastUserStatus(username, "left", groupsJoined);
                 clientWriters.remove(out);
             }
         }
@@ -128,12 +145,53 @@ public final class MessageBoardServer {
             }
         }
 
-        private void broadcastUserStatus(String username, String status) {
-            String statusMessage = "User '" + username + "' " + status + " the group.";
+        private void broadcastUserStatus(String username, String status, ArrayList<String> groupsAffected) {
+            String statusMessage = "User '" + username + "' " + status + " groups "
+                                 + String.join(", ", groupsAffected) + ".";
             System.out.println(statusMessage);
             for (PrintWriter client : clientWriters) {
                 client.println(statusMessage);
             }
+        }
+
+        private void join(String groupsToJoinString) {
+            // Move each comma-separated group to an array element.
+            String[] groupsToJoinArray = groupsToJoinString.split(",");
+
+            for (String dirtyGroup : groupsToJoinArray) {
+                // "Clean" groups by removing whitespace.
+                String cleanGroup = dirtyGroup.trim();
+
+                // Resolve each <cleanGroup> to an ID. In the process, monitor whether the
+                // <cleanGroup> actually exists.
+                boolean groupExists = false;
+                if (groups.containsKey(cleanGroup)) {
+                    groupExists = true;
+                }
+                if (groups.containsValue(cleanGroup)) {
+                    groupExists = true;
+
+                    // Resolve <cleanGroup> to ID.
+                    for (Map.Entry<String, String> group : groups.entrySet()) {
+                        if (cleanGroup.equals(group.getValue())) {
+                            cleanGroup = group.getKey();
+                        }
+                    }
+                }
+
+                // Users can only join an existing group that they aren't already in.
+                if (groupExists && !groupsJoined.contains(cleanGroup)) {
+                    groupsJoined.add(cleanGroup);
+
+                    // Add user to <members> for the group. If no mapping exists for the group,
+                    // this code will create one via a lambda function.
+                    members.computeIfAbsent(cleanGroup, k -> new ArrayList<String>()).add(username);
+                }
+            }
+        }
+
+        private String getMembers(String groupId) {
+            return String.join(", ", members.get(groupId));
         }
     }
 
