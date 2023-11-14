@@ -17,7 +17,7 @@ public class MessageBoardClient {
             out.println(username);
 
             System.out.println("You are now connected to the message board.");
-            System.out.println("Type 'POST' to write a message or 'GET' to retrieve one.");
+            System.out.println("Type 'JOIN' to join a group, 'POST' to write a message, or 'GET' to retrieve one.");
             System.out.println("");
 
             Thread receiveThread = new Thread(() -> {
@@ -50,7 +50,7 @@ public class MessageBoardClient {
                     String groups = scanner.nextLine();
                     out.println("JOIN:" + groups); // Send groups
                 } else {
-                    System.out.println("Type 'POST' to write a message or 'GET' to retrieve one.");
+                    System.out.println("Type 'JOIN' to join a group, 'POST' to write a message, or 'GET' to retrieve one.");
                 }
             }
         } catch (IOException e) {

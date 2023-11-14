@@ -12,6 +12,8 @@ public final class MessageBoardServer {
                                                                        // groups by ID and name. IDs
                                                                        // are strings to join method
                                                                        // simpler.
+    private static final Map<String, ArrayList<String>> members = new HashMap<>(); // Mapping of group IDs to
+                                                                                   // lists of usernames.
 
     public static void main(String[] args) {
         // Hard code 5 groups with the map's put method.
@@ -86,15 +88,13 @@ public final class MessageBoardServer {
                     }
 
                     out.println("");
-                }
-                if (messages.size() != 0) {
+                } else if (messages.size() != 0) {
                     out.println("Chat history:");
                     out.println(messages.get(1).getDisplayString());
                 }
                 
                 username = in.readLine();
                 activeUsers.add(username);
-                broadcastUserStatus(username, "joined");
 
                 String line;
                 while ((line = in.readLine()) != null) {
@@ -110,9 +110,12 @@ public final class MessageBoardServer {
                         String groupsToJoin = line.split(":")[1];
                         join(groupsToJoin);
 
-                        // OUTPUT FOR TESTING
+                        broadcastUserStatus(username, "joined", groupsJoined);
+
+                        // Show user members of their groups.
                         for (String group : groupsJoined) {
-                            out.println(group);
+                            out.printf("Members of group %s: ", group);
+                            out.println(getMembers(group));
                         }
                     } else {
                         String subject = line;
@@ -131,7 +134,7 @@ public final class MessageBoardServer {
                     e.printStackTrace();
                 }
                 activeUsers.remove(username);
-                broadcastUserStatus(username, "left");
+                broadcastUserStatus(username, "left", groupsJoined);
                 clientWriters.remove(out);
             }
         }
@@ -142,8 +145,9 @@ public final class MessageBoardServer {
             }
         }
 
-        private void broadcastUserStatus(String username, String status) {
-            String statusMessage = "User '" + username + "' " + status + " the group.";
+        private void broadcastUserStatus(String username, String status, ArrayList<String> groupsAffected) {
+            String statusMessage = "User '" + username + "' " + status + " groups "
+                                 + String.join(", ", groupsAffected) + ".";
             System.out.println(statusMessage);
             for (PrintWriter client : clientWriters) {
                 client.println(statusMessage);
@@ -178,8 +182,16 @@ public final class MessageBoardServer {
                 // Users can only join an existing group that they aren't already in.
                 if (groupExists && !groupsJoined.contains(cleanGroup)) {
                     groupsJoined.add(cleanGroup);
+
+                    // Add user to <members> for the group. If no mapping exists for the group,
+                    // this code will create one via a lambda function.
+                    members.computeIfAbsent(cleanGroup, k -> new ArrayList<String>()).add(username);
                 }
             }
+        }
+
+        private String getMembers(String groupId) {
+            return String.join(", ", members.get(groupId));
         }
     }
 
