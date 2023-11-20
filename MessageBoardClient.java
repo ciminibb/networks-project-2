@@ -5,19 +5,20 @@ import java.util.*;
 public class MessageBoardClient {
     public static void main(String[] args) {
         String serverAddress = "localhost";
-        int serverPort = 42069; // nice
+        int serverPort = 42069; // Example port
 
-        try (Socket socket = new Socket(serverAddress, serverPort);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-             Scanner scanner = new Scanner(System.in)) {
-
+        try (
+            Socket socket = new Socket(serverAddress, serverPort);
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            Scanner scanner = new Scanner(System.in)
+        ) {
             System.out.print("Enter your username: ");
             String username = scanner.nextLine();
             out.println(username);
 
             System.out.println("You are now connected to the message board.");
-            System.out.println("Type 'POST' to write a message or 'GET' to retrieve one.");
+            System.out.println("Type 'JOIN' to join a group, 'POST' to write a message, or 'GET' to retrieve one.");
             System.out.println("");
 
             Thread receiveThread = new Thread(() -> {
@@ -39,14 +40,19 @@ public class MessageBoardClient {
                     String id = scanner.nextLine();
                     out.println("GET_MESSAGE:" + id);
                 } else if (line.equalsIgnoreCase("POST")) {
+                    System.out.print("Enter group ID for the message: ");
+                    String groupId = scanner.nextLine();
                     System.out.print("Enter message subject: ");
                     String subject = scanner.nextLine();
-                    out.println(subject); // Send subject
                     System.out.print("Enter message content: ");
                     String content = scanner.nextLine();
-                    out.println(content); // Send content
+                    out.println("POST_MESSAGE:" + groupId + ":" + subject + ":" + content);
+                } else if (line.equalsIgnoreCase("JOIN")) {
+                    System.out.print("Enter comma-separated groups: ");
+                    String groups = scanner.nextLine();
+                    out.println("JOIN:" + groups);
                 } else {
-                    System.out.println("Type 'POST' to write a message or 'GET' to retrieve one.");
+                    System.out.println("Type 'JOIN' to join a group, 'POST' to write a message, or 'GET' to retrieve one.");
                 }
             }
         } catch (IOException e) {
