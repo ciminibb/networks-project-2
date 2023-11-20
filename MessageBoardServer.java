@@ -44,7 +44,7 @@ public final class MessageBoardServer {
         private Socket clientSocket;
         private PrintWriter out;
         private String username;
-        private Set<String> groupsJoined = new HashSet<>();
+        private ArrayList<String> groupsJoined = new ArrayList<>();
 
         public ClientHandler(Socket clientSocket, PrintWriter out) {
             this.clientSocket = clientSocket;
@@ -59,11 +59,22 @@ public final class MessageBoardServer {
                 activeUsers.add(username);
 
                 sendGroupList();
+                out.println("");
 
                 String inputLine;
                 while ((inputLine = in.readLine()) != null) {
                     if (inputLine.startsWith("JOIN:")) {
                         joinGroup(inputLine.substring(5));
+
+                        // Notify joined groups.
+                        joinLeaveNotifs(username, "joined", groupsJoined);
+
+                        // Show user members of their groups.
+                        for (String group : groupsJoined) {
+                            out.printf("Members of group %s: ", group);
+                            out.println(getMembers(group));
+                        }
+                        out.println("");
                     } else if (inputLine.startsWith("POST_MESSAGE:")) {
                         postMessage(inputLine.substring(13));
                     } else if (inputLine.startsWith("GET_MESSAGE:")) {
@@ -82,6 +93,8 @@ public final class MessageBoardServer {
                 } catch (IOException e) {
                     System.out.println("Socket close exception: " + e.getMessage());
                 }
+                joinLeaveNotifs(username, "left", groupsJoined);
+                clientWriters.remove(out);
             }
         }
 
@@ -92,19 +105,42 @@ public final class MessageBoardServer {
             }
         }
 
-        private void joinGroup(String groupData) {
-            String[] groupIds = groupData.split(",");
-            for (String groupId : groupIds) {
-                String cleanGroup = groupId.trim();
-                if (groups.containsKey(cleanGroup) || groups.containsValue(cleanGroup)) {
-                    if (!groupsJoined.contains(cleanGroup)) {
-                        groupsJoined.add(cleanGroup);
-                        members.computeIfAbsent(cleanGroup, k -> new ArrayList<>()).add(username);
-                        groupClients.computeIfAbsent(cleanGroup, k -> new HashSet<>()).add(out);
+        private void joinGroup(String groupsToJoinString) {
+            // Move each comma-separated group to an array element.
+            String[] groupsToJoinArray = groupsToJoinString.split(",");
 
-                        // Send the last two messages of this group to the client
-                        sendLastTwoMessages(cleanGroup);
+            for (String dirtyGroup : groupsToJoinArray) {
+                // "Clean" groups by removing whitespace.
+                String cleanGroup = dirtyGroup.trim();
+
+                // Resolve each <cleanGroup> to an ID. In the process, monitor whether the
+                // <cleanGroup> actually exists.
+                boolean groupExists = false;
+                if (groups.containsKey(cleanGroup)) {
+                    groupExists = true;
+                }
+                if (groups.containsValue(cleanGroup)) {
+                    groupExists = true;
+
+                    // Resolve <cleanGroup> to ID.
+                    for (Map.Entry<String, String> group : groups.entrySet()) {
+                        if (cleanGroup.equals(group.getValue())) {
+                            cleanGroup = group.getKey();
+                        }
                     }
+                }
+
+                // Users can only join an existing group that they aren't already in.
+                if (groupExists && !groupsJoined.contains(cleanGroup)) {
+                    groupsJoined.add(cleanGroup);
+
+                    // Add user to <members> for the group. If no mapping exists for the group,
+                    // this code will create one via a lambda function.
+                    members.computeIfAbsent(cleanGroup, k -> new ArrayList<>()).add(username);
+                    groupClients.computeIfAbsent(cleanGroup, k -> new HashSet<>()).add(out);
+
+                    // Send the last two messages of this group to the client
+                    sendLastTwoMessages(cleanGroup);
                 }
             }
         }
@@ -160,6 +196,25 @@ public final class MessageBoardServer {
                     clientWriter.println(message.getDisplayString());
                 }
             }
+        }
+
+        private void joinLeaveNotifs(String user, String action, ArrayList<String> groupsAffected) {
+            for (String groupAffected : groupsAffected) {
+                // Set notification string.
+                String notif = "User '" + user + "' " + action + " group " + groupAffected;
+
+                // Notify affected group.
+                Set<PrintWriter> clientsInGroup = groupClients.get(groupAffected);
+                if (clientsInGroup != null) {
+                    for (PrintWriter clientWriter : clientsInGroup) {
+                        clientWriter.println(notif);
+                    }
+                }
+            }
+        }
+
+        private String getMembers(String groupId) {
+            return String.join(", ", members.get(groupId));
         }
     }
 
