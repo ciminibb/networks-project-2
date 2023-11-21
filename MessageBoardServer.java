@@ -81,6 +81,10 @@ public final class MessageBoardServer {
                         printInstructions();
                     } else if (inputLine.startsWith("LEAVE:")) {
                         leaveGroup(inputLine.substring(6));
+                    } else if (inputLine.startsWith("MEMBERS:")) {
+                        sendMemberList(inputLine.substring(8));
+                    } else if (inputLine.startsWith("HISTORY:")) {
+                        sendLastTwoMessages(inputLine.substring(8));
                     }
                 }
             } catch (IOException e) {
@@ -112,6 +116,11 @@ public final class MessageBoardServer {
         }
 
         private void sendMemberList(String groupId) {
+            if (!members.containsKey(groupId)) {
+                out.printf("-- Users in group %s: empty\n", groupId);
+                return;
+            }
+            
             // Store the list of members locally, so it can be changed.
             ArrayList<String> memberList = new ArrayList<>(members.get(groupId));
 
@@ -122,7 +131,7 @@ public final class MessageBoardServer {
             String memberString = String.join(", ", memberList);
 
             if (memberList.isEmpty()) {
-                memberString = "Only you!";
+                memberString = "only you";
             }
 
             // Output the members.
@@ -173,7 +182,7 @@ public final class MessageBoardServer {
 
                         // Display the group's recent activity to the user. This recent activity
                         // should include the last two messages and notification of them joining.
-                        out.println("-- Recent activity:");
+                        out.println("-- History:");
                         sendLastTwoMessages(cleanGroup);
                     }
                     joinLeaveNotif(username, "joined", cleanGroup);
@@ -227,6 +236,11 @@ public final class MessageBoardServer {
         }
 
         private void sendLastTwoMessages(String groupId) {
+            if (!members.get(groupId).contains(username)) {
+                out.println("Join group to access.");
+                return;
+            }
+            
             List<Message> groupMessages = messages.values().stream()
                     .filter(m -> members.get(groupId).contains(m.sender))
                     .sorted(Comparator.comparingInt(m -> m.id))
@@ -300,8 +314,10 @@ public final class MessageBoardServer {
         private void printInstructions() {
             out.println("-- Type 'PUBLICPOST' to post on the public message board.");
             out.println("-- Type 'JOIN' to join a private group.");
+            out.println("-- Type 'LEAVE' to leave a private group.");
             out.println("-- Type 'POST' to post on a private group.");
             out.println("-- Type 'GET' to get the contents of a post.");
+            out.println("-- Type 'MEMBERS' to see the members of a group.");
             out.println("-- Type 'HELP' to see these instructions again!");
         }
     }

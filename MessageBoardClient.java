@@ -62,6 +62,14 @@ public class MessageBoardClient {
                     System.out.print("-- Enter comma-separated groups: ");
                     String groups = scanner.nextLine();
                     out.println("LEAVE:" + groups);
+                } else if (line.equalsIgnoreCase("MEMBERS")) {
+                    System.out.print("-- Enter group ID to see its members: ");
+                    String groupId = scanner.nextLine();
+                    out.println("MEMBERS:" + groupId);
+                } else if (line.equalsIgnoreCase("HISTORY")) {
+                    System.out.print("-- Enter group ID to see its history: ");
+                    String groupId = scanner.nextLine();
+                    out.println("HISTORY:" + groupId);
                 } else {
                     System.out.println("-- Type 'HELP' to see the instruction set!");
                 }
