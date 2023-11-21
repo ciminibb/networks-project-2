@@ -79,6 +79,8 @@ public final class MessageBoardServer {
                         getMessage(Integer.parseInt(messageId), out);
                     } else if (inputLine.startsWith("HELP")) {
                         printInstructions();
+                    } else if (inputLine.startsWith("LEAVE:")) {
+                        leaveGroup(inputLine.substring(6));
                     }
                 }
             } catch (IOException e) {
@@ -165,16 +167,63 @@ public final class MessageBoardServer {
                     members.computeIfAbsent(cleanGroup, k -> new ArrayList<>()).add(username);
                     groupClients.computeIfAbsent(cleanGroup, k -> new HashSet<>()).add(out);
 
-                    // Display the group's members to the user.
-                    sendMemberList(cleanGroup);
+                    if (cleanGroup == "0") {
+                        // Display the group's members to the user.
+                        sendMemberList(cleanGroup);
 
-                    // Display the group's recent activity to the user. This recent activity
-                    // should include the last two messages and notification of them joining.
-                    out.println("-- Recent activity:");
-                    sendLastTwoMessages(cleanGroup);
+                        // Display the group's recent activity to the user. This recent activity
+                        // should include the last two messages and notification of them joining.
+                        out.println("-- Recent activity:");
+                        sendLastTwoMessages(cleanGroup);
+                    }
                     joinLeaveNotif(username, "joined", cleanGroup);
                 }
             }
+        }
+
+        private void leaveGroup(String groupsToLeaveString) {
+            // Move each comma-separated group to an array element.
+            String[] groupsToLeaveArray = groupsToLeaveString.split(",");
+
+            for (String dirtyGroup : groupsToLeaveArray) {
+                // "Clean" groups by removing whitespace.
+                String cleanGroup = dirtyGroup.trim();
+
+                // Resolve each <cleanGroup> to an ID. In the process, monitor whether the
+                // <cleanGroup> actually exists.
+                boolean groupExists = false;
+                if (groups.containsKey(cleanGroup)) {
+                    groupExists = true;
+                }
+                if (groups.containsValue(cleanGroup)) {
+                    groupExists = true;
+
+                    // Resolve <cleanGroup> to ID.
+                    for (Map.Entry<String, String> group : groups.entrySet()) {
+                        if (cleanGroup.equals(group.getValue())) {
+                            cleanGroup = group.getKey();
+                        }
+                    }
+                }
+
+                // Users can only leave an existing group that they are in.
+                if (groupExists && groupsJoined.contains(cleanGroup)) {
+                    groupsJoined.remove(cleanGroup);
+
+                    // Remove user from the group's members and clients.
+                    members.get(cleanGroup).remove(username);
+                    groupClients.get(cleanGroup).remove(out);
+
+                    // Remove group from user's joined groups.
+                    groupsJoined.remove(cleanGroup);
+
+                    // Notify other members of the user leaving.
+                    joinLeaveNotif(username, "left", cleanGroup);
+                }
+            }
+
+            // Wrap-up.
+            out.println("-- Successfully left groups " + groupsToLeaveString);
         }
 
         private void sendLastTwoMessages(String groupId) {

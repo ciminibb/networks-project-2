@@ -58,6 +58,10 @@ public class MessageBoardClient {
                     out.println("POST_MESSAGE:" + groupId + ":" + subject + ":" + content);
                 } else if (line.equalsIgnoreCase("HELP")) {
                     out.println("HELP");
+                } else if (line.equalsIgnoreCase("LEAVE")) {
+                    System.out.print("-- Enter comma-separated groups: ");
+                    String groups = scanner.nextLine();
+                    out.println("LEAVE:" + groups);
                 } else {
                     System.out.println("-- Type 'HELP' to see the instruction set!");
                 }
