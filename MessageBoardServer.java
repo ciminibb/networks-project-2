@@ -14,7 +14,8 @@ public final class MessageBoardServer {
     private static final Map<String, Set<PrintWriter>> groupClients = new HashMap<>();
 
     public static void main(String[] args) {
-        // Hardcode 5 groups
+        // Hardcode 5 groups + the default, public group.
+        groups.put("0", "Message Board");
         groups.put("1", "Bengals Fans");
         groups.put("2", "Jujutsu Kaisen Fans");
         groups.put("3", "Lunch Enjoyers");
@@ -24,7 +25,7 @@ public final class MessageBoardServer {
         int serverPort = 42069; // Example port
 
         try (ServerSocket serverSocket = new ServerSocket(serverPort)) {
-            System.out.println("Message Board Server started on port " + serverPort);
+            System.out.println("-- Message Board Server started on port " + serverPort);
 
             while (true) {
                 Socket clientSocket = serverSocket.accept();
@@ -54,32 +55,36 @@ public final class MessageBoardServer {
         @Override
         public void run() {
             try (
-                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));) {
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));) {
                 this.username = in.readLine();
                 activeUsers.add(username);
 
+                // All users are added to the public group upon connecting to the server.
+                joinGroup("0");
+
+                out.println("");
                 sendGroupList();
+                out.println("");
+                out.println("-- Type 'HELP' to see the instruction set!");
                 out.println("");
 
                 String inputLine;
                 while ((inputLine = in.readLine()) != null) {
                     if (inputLine.startsWith("JOIN:")) {
                         joinGroup(inputLine.substring(5));
-
-                        // Notify joined groups.
-                        joinLeaveNotifs(username, "joined", groupsJoined);
-
-                        // Show user members of their groups.
-                        for (String group : groupsJoined) {
-                            out.printf("Members of group %s: ", group);
-                            out.println(getMembers(group));
-                        }
-                        out.println("");
                     } else if (inputLine.startsWith("POST_MESSAGE:")) {
                         postMessage(inputLine.substring(13));
                     } else if (inputLine.startsWith("GET_MESSAGE:")) {
                         String messageId = inputLine.substring(12);
                         getMessage(Integer.parseInt(messageId), out);
+                    } else if (inputLine.startsWith("HELP")) {
+                        printInstructions();
+                    } else if (inputLine.startsWith("LEAVE:")) {
+                        leaveGroup(inputLine.substring(6));
+                    } else if (inputLine.startsWith("MEMBERS:")) {
+                        sendMemberList(inputLine.substring(8));
+                    } else if (inputLine.startsWith("HISTORY:")) {
+                        sendLastTwoMessages(inputLine.substring(8));
                     }
                 }
             } catch (IOException e) {
@@ -93,15 +98,47 @@ public final class MessageBoardServer {
                 } catch (IOException e) {
                     System.out.println("Socket close exception: " + e.getMessage());
                 }
-                joinLeaveNotifs(username, "left", groupsJoined);
+                for (String group : groupsJoined) {
+                    joinLeaveNotif(username, "left", group);
+                }
                 clientWriters.remove(out);
             }
         }
 
         private void sendGroupList() {
-            out.println("Available Groups:");
+            out.println("-- Available Groups:");
             for (Map.Entry<String, String> groupEntry : groups.entrySet()) {
-                out.println("Group ID: " + groupEntry.getKey() + ", Name: " + groupEntry.getValue());
+                // Output all but the default, public group.
+                if (groupEntry.getKey() != "0") {
+                    out.println("-- Group ID: " + groupEntry.getKey() + ", Name: " + groupEntry.getValue());
+                }
+            }
+        }
+
+        private void sendMemberList(String groupId) {
+            if (!members.containsKey(groupId)) {
+                out.printf("-- Users in group %s: empty\n", groupId);
+                return;
+            }
+            
+            // Store the list of members locally, so it can be changed.
+            ArrayList<String> memberList = new ArrayList<>(members.get(groupId));
+
+            // Remove current user from the list. They don't need to see themselves in it.
+            memberList.remove(username);
+
+            // Account for the fact that any given user may be the first.
+            String memberString = String.join(", ", memberList);
+
+            if (memberList.isEmpty()) {
+                memberString = "only you";
+            }
+
+            // Output the members.
+            if (groupId == "0") {
+                out.printf("-- Users in the message board: %s\n", memberString);
+            } else {
+                out.printf("-- Users in group %s: %s\n", groupId, memberString);
             }
         }
 
@@ -139,13 +176,71 @@ public final class MessageBoardServer {
                     members.computeIfAbsent(cleanGroup, k -> new ArrayList<>()).add(username);
                     groupClients.computeIfAbsent(cleanGroup, k -> new HashSet<>()).add(out);
 
-                    // Send the last two messages of this group to the client
-                    sendLastTwoMessages(cleanGroup);
+                    if (cleanGroup == "0") {
+                        // Display the group's members to the user.
+                        sendMemberList(cleanGroup);
+
+                        // Display the group's recent activity to the user. This recent activity
+                        // should include the last two messages and notification of them joining.
+                        out.println("-- History:");
+                        sendLastTwoMessages(cleanGroup);
+                    }
+                    joinLeaveNotif(username, "joined", cleanGroup);
                 }
             }
         }
 
+        private void leaveGroup(String groupsToLeaveString) {
+            // Move each comma-separated group to an array element.
+            String[] groupsToLeaveArray = groupsToLeaveString.split(",");
+
+            for (String dirtyGroup : groupsToLeaveArray) {
+                // "Clean" groups by removing whitespace.
+                String cleanGroup = dirtyGroup.trim();
+
+                // Resolve each <cleanGroup> to an ID. In the process, monitor whether the
+                // <cleanGroup> actually exists.
+                boolean groupExists = false;
+                if (groups.containsKey(cleanGroup)) {
+                    groupExists = true;
+                }
+                if (groups.containsValue(cleanGroup)) {
+                    groupExists = true;
+
+                    // Resolve <cleanGroup> to ID.
+                    for (Map.Entry<String, String> group : groups.entrySet()) {
+                        if (cleanGroup.equals(group.getValue())) {
+                            cleanGroup = group.getKey();
+                        }
+                    }
+                }
+
+                // Users can only leave an existing group that they are in.
+                if (groupExists && groupsJoined.contains(cleanGroup)) {
+                    groupsJoined.remove(cleanGroup);
+
+                    // Remove user from the group's members and clients.
+                    members.get(cleanGroup).remove(username);
+                    groupClients.get(cleanGroup).remove(out);
+
+                    // Remove group from user's joined groups.
+                    groupsJoined.remove(cleanGroup);
+
+                    // Notify other members of the user leaving.
+                    joinLeaveNotif(username, "left", cleanGroup);
+                }
+            }
+
+            // Wrap-up.
+            out.println("-- Successfully left groups " + groupsToLeaveString);
+        }
+
         private void sendLastTwoMessages(String groupId) {
+            if (!members.get(groupId).contains(username)) {
+                out.println("Join group to access.");
+                return;
+            }
+            
             List<Message> groupMessages = messages.values().stream()
                     .filter(m -> members.get(groupId).contains(m.sender))
                     .sorted(Comparator.comparingInt(m -> m.id))
@@ -198,23 +293,32 @@ public final class MessageBoardServer {
             }
         }
 
-        private void joinLeaveNotifs(String user, String action, ArrayList<String> groupsAffected) {
-            for (String groupAffected : groupsAffected) {
-                // Set notification string.
-                String notif = "User '" + user + "' " + action + " group " + groupAffected;
+        private void joinLeaveNotif(String user, String action, String groupId) {
+            // Set notification string.
+            String notif = "User '" + user + "' " + action + " group " + groupId;
 
-                // Notify affected group.
-                Set<PrintWriter> clientsInGroup = groupClients.get(groupAffected);
-                if (clientsInGroup != null) {
-                    for (PrintWriter clientWriter : clientsInGroup) {
-                        clientWriter.println(notif);
-                    }
+            // Special notification when joining/leaving the public group.
+            if (groupId == "0") {
+                notif = "User '" + user + "' " + action + " the message board.";
+            }
+
+            // Notify affected group.
+            Set<PrintWriter> clientsInGroup = groupClients.get(groupId);
+            if (clientsInGroup != null) {
+                for (PrintWriter clientWriter : clientsInGroup) {
+                    clientWriter.println(notif);
                 }
             }
         }
 
-        private String getMembers(String groupId) {
-            return String.join(", ", members.get(groupId));
+        private void printInstructions() {
+            out.println("-- Type 'PUBLICPOST' to post on the public message board.");
+            out.println("-- Type 'JOIN' to join a private group.");
+            out.println("-- Type 'LEAVE' to leave a private group.");
+            out.println("-- Type 'POST' to post on a private group.");
+            out.println("-- Type 'GET' to get the contents of a post.");
+            out.println("-- Type 'MEMBERS' to see the members of a group.");
+            out.println("-- Type 'HELP' to see these instructions again!");
         }
     }
 
