@@ -321,6 +321,7 @@ public final class MessageBoardServer {
             out.println("-- Type 'POST' to post on a private group.");
             out.println("-- Type 'GET' to get the contents of a post.");
             out.println("-- Type 'MEMBERS' to see the members of a group.");
+            out.println("-- Type 'HISTORY' to see the chat history of a group.");
             out.println("-- Type 'HELP' to see these instructions again!");
         }
     }
