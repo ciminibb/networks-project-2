@@ -269,6 +269,8 @@ public final class MessageBoardServer {
                 Message newMessage = new Message(messageId, username, subject, content, groupId);
                 messages.put(messageId, newMessage);
                 broadcastMessageInGroup(newMessage, groupId);
+            } else {
+                out.println("Error: Unable to post. The group does not exist or you are not a member. Please join the group or verify the group's existence before posting.");
             }
         }
 
