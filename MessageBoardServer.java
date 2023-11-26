@@ -265,7 +265,7 @@ public final class MessageBoardServer {
 
             if (groupsJoined.contains(groupId)) {
                 int messageId = messageID++;
-                Message newMessage = new Message(messageId, username, subject, content);
+                Message newMessage = new Message(messageId, username, subject, content, groupId);
                 messages.put(messageId, newMessage);
                 broadcastMessageInGroup(newMessage, groupId);
             }
@@ -328,17 +328,19 @@ public final class MessageBoardServer {
         String date;
         String subject;
         String content;
+        String groupId;
 
-        public Message(int id, String sender, String subject, String content) {
+        public Message(int id, String sender, String subject, String content, String groupId) {
             this.id = id;
             this.sender = sender;
             this.subject = subject;
             this.content = content;
             this.date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+            this.groupId = groupId;
         }
 
         public String getDisplayString() {
-            return id + ", " + sender + ", " + date + ", " + subject;
+            return id + ", " + sender + ", " + date + ", " + subject + ", " + groupId;
         }
 
         @Override
