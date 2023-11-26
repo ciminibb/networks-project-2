@@ -55,7 +55,7 @@ public final class MessageBoardServer {
         @Override
         public void run() {
             try (
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));) {
                 this.username = in.readLine();
                 activeUsers.add(username);
 
@@ -120,7 +120,7 @@ public final class MessageBoardServer {
                 out.printf("-- Users in group %s: empty\n", groupId);
                 return;
             }
-            
+
             // Store the list of members locally, so it can be changed.
             ArrayList<String> memberList = new ArrayList<>(members.get(groupId));
 
@@ -240,7 +240,7 @@ public final class MessageBoardServer {
                 out.println("Join group to access.");
                 return;
             }
-            
+
             List<Message> groupMessages = messages.values().stream()
                     .filter(m -> members.get(groupId).contains(m.sender))
                     .sorted(Comparator.comparingInt(m -> m.id))
@@ -268,6 +268,8 @@ public final class MessageBoardServer {
                 Message newMessage = new Message(messageId, username, subject, content);
                 messages.put(messageId, newMessage);
                 broadcastMessageInGroup(newMessage, groupId);
+            } else {
+                out.println("Error: Unable to post. The group does not exist or you are not a member. Please join the group or verify the group's existence before posting.");
             }
         }
 
