@@ -1,7 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.stream.Collectors;
+// import java.util.stream.Collectors;
 import java.text.SimpleDateFormat;
 
 public final class MessageBoardServer {
@@ -55,7 +55,7 @@ public final class MessageBoardServer {
         @Override
         public void run() {
             try (
-                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));) {
+                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));) {
                 this.username = in.readLine();
                 activeUsers.add(username);
 
@@ -120,7 +120,7 @@ public final class MessageBoardServer {
                 out.printf("-- Users in group %s: empty\n", groupId);
                 return;
             }
-            
+
             // Store the list of members locally, so it can be changed.
             ArrayList<String> memberList = new ArrayList<>(members.get(groupId));
 
@@ -176,15 +176,12 @@ public final class MessageBoardServer {
                     members.computeIfAbsent(cleanGroup, k -> new ArrayList<>()).add(username);
                     groupClients.computeIfAbsent(cleanGroup, k -> new HashSet<>()).add(out);
 
-                    if (cleanGroup == "0") {
-                        // Display the group's members to the user.
-                        sendMemberList(cleanGroup);
-
-                        // Display the group's recent activity to the user. This recent activity
-                        // should include the last two messages and notification of them joining.
-                        out.println("-- History:");
-                        sendLastTwoMessages(cleanGroup);
-                    }
+                    // Display the group's members to the user.
+                    sendMemberList(cleanGroup);
+                    // Display the group's recent activity to the user. This recent activity
+                    // should include the last two messages and notification of them joining.
+                    out.println("-- History:");
+                    sendLastTwoMessages(cleanGroup);
                     joinLeaveNotif(username, "joined", cleanGroup);
                 }
             }
@@ -236,21 +233,25 @@ public final class MessageBoardServer {
         }
 
         private void sendLastTwoMessages(String groupId) {
-            if (!members.get(groupId).contains(username)) {
-                out.println("Join group to access.");
+            List<String> groupMembers = members.get(groupId);
+            if (groupMembers == null || !groupMembers.contains(username)) {
+                out.println("Join group to access or group does not exist.");
                 return;
-            }
-            
-            List<Message> groupMessages = messages.values().stream()
-                    .filter(m -> members.get(groupId).contains(m.sender))
-                    .sorted(Comparator.comparingInt(m -> m.id))
-                    .collect(Collectors.toList());
+            } else {
 
-            // Get the last two messages
-            int messageCount = groupMessages.size();
-            for (int i = Math.max(messageCount - 2, 0); i < messageCount; i++) {
-                Message message = groupMessages.get(i);
-                out.println(message.getDisplayString());
+                int messageCount = messages.size();
+                int numberOfMessages = 0;
+
+                // Get the last two messages
+                for (int i = messageCount; i > 0; i--) {
+                    Message message = messages.get(i - 1);
+                    if (numberOfMessages == 2) {
+                        break;
+                    } else if (groupId.equals(message.groupId)) {
+                        out.println(message.getDisplayString());
+                        numberOfMessages++;
+                    }
+                }
             }
         }
 
@@ -265,9 +266,11 @@ public final class MessageBoardServer {
 
             if (groupsJoined.contains(groupId)) {
                 int messageId = messageID++;
-                Message newMessage = new Message(messageId, username, subject, content);
+                Message newMessage = new Message(messageId, username, subject, content, groupId);
                 messages.put(messageId, newMessage);
                 broadcastMessageInGroup(newMessage, groupId);
+            } else {
+                out.println("Error: Unable to post. The group does not exist or you are not a member. Please join the group or verify the group's existence before posting.");
             }
         }
 
@@ -318,6 +321,7 @@ public final class MessageBoardServer {
             out.println("-- Type 'POST' to post on a private group.");
             out.println("-- Type 'GET' to get the contents of a post.");
             out.println("-- Type 'MEMBERS' to see the members of a group.");
+            out.println("-- Type 'HISTORY' to see the chat history of a group.");
             out.println("-- Type 'HELP' to see these instructions again!");
         }
     }
@@ -328,17 +332,19 @@ public final class MessageBoardServer {
         String date;
         String subject;
         String content;
+        String groupId;
 
-        public Message(int id, String sender, String subject, String content) {
+        public Message(int id, String sender, String subject, String content, String groupId) {
             this.id = id;
             this.sender = sender;
             this.subject = subject;
             this.content = content;
             this.date = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date());
+            this.groupId = groupId;
         }
 
         public String getDisplayString() {
-            return id + ", " + sender + ", " + date + ", " + subject;
+            return id + ", " + sender + ", " + date + ", " + subject + ", " + groupId;
         }
 
         @Override
