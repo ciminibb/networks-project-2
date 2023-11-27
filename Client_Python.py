@@ -70,3 +70,5 @@ class MessageBoardClient:
 if __name__ == "__main__":
     client = MessageBoardClient('localhost', 42069)
     client.run()
+    
+    # random comment
