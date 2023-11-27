@@ -191,6 +191,7 @@ public final class MessageBoardServer {
             // Move each comma-separated group to an array element.
             String[] groupsToLeaveArray = groupsToLeaveString.split(",");
 
+            boolean allGroupsValid = true;
             for (String dirtyGroup : groupsToLeaveArray) {
                 // "Clean" groups by removing whitespace.
                 String cleanGroup = dirtyGroup.trim();
@@ -225,11 +226,17 @@ public final class MessageBoardServer {
 
                     // Notify other members of the user leaving.
                     joinLeaveNotif(username, "left", cleanGroup);
+                } else {
+                    allGroupsValid = false;
                 }
             }
 
             // Wrap-up.
-            out.println("-- Successfully left groups " + groupsToLeaveString);
+            if (allGroupsValid) {
+                out.println("-- Successfully left groups " + groupsToLeaveString);
+            } else {
+                out.println("-- Cannot leave unjoined groups.");
+            }
         }
 
         private void sendLastTwoMessages(String groupId) {
