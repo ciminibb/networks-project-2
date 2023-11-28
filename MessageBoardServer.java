@@ -346,11 +346,12 @@ public final class MessageBoardServer {
         private void printInstructions() {
             out.println("-- Type 'PUBLICPOST' to post on the public message board.");
             out.println("-- Type 'JOIN' to join a private group.");
-            out.println("-- Type 'LEAVE' to leave a private group.");
             out.println("-- Type 'POST' to post on a private group.");
             out.println("-- Type 'GET' to get the contents of a post.");
             out.println("-- Type 'MEMBERS' to see the members of a group.");
             out.println("-- Type 'HISTORY' to see the chat history of a group.");
+            out.println("-- Type 'LEAVE' to leave a private group.");
+            out.println("-- Type 'DISCONNECT' to disconnect from the server.");
             out.println("-- Type 'HELP' to see these instructions again!");
         }
     }
