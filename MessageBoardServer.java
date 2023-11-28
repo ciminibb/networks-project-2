@@ -98,6 +98,10 @@ public final class MessageBoardServer {
                         sendLastTwoMessages(inputLine.substring(8));
                     } else if (inputLine.startsWith("DISCONNECT")) {
                         out.println("-- Disconnecting from the server.");
+                        for (String group : groupsJoined) {
+                            leaveGroup(group);
+                        }
+                        clientWriters.remove(out);
                         break; // Break the loop to exit the client handling thread
                     }
                 }
@@ -114,7 +118,7 @@ public final class MessageBoardServer {
                     System.out.println("Socket close exception: " + e.getMessage());
                 }
                 for (String group : groupsJoined) {
-                    joinLeaveNotif(username, "left", group);
+                    leaveGroup(group);
                 }
                 clientWriters.remove(out);
             }
