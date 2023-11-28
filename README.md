@@ -12,7 +12,6 @@ effective examples for basic socket programming. The result was a framework whic
 build upon. With a client and server communicating, we needed only slight adjustments to
 implement a first, basic message board. Those adjustments were informed by further research.
 Afterward, we were ready to begin implementing the features spelled out in part 1.
-nbsp;
 
 Another bottleneck in our development was implementing private groups. There was, simply, a lot
 of new code necessary to get the feature up-and-running. For example, new data structures: a
