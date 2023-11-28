@@ -98,6 +98,10 @@ public final class MessageBoardServer {
                         sendLastTwoMessages(inputLine.substring(8));
                     } else if (inputLine.startsWith("DISCONNECT")) {
                         out.println("-- Disconnecting from the server.");
+                        for (String group : groupsJoined) {
+                            leaveGroup(group);
+                        }
+                        clientWriters.remove(out);
                         break; // Break the loop to exit the client handling thread
                     }
                 }
@@ -114,7 +118,7 @@ public final class MessageBoardServer {
                     System.out.println("Socket close exception: " + e.getMessage());
                 }
                 for (String group : groupsJoined) {
-                    joinLeaveNotif(username, "left", group);
+                    leaveGroup(group);
                 }
                 clientWriters.remove(out);
             }
@@ -135,6 +139,9 @@ public final class MessageBoardServer {
         private void sendMemberList(String groupId) {
             if (!members.containsKey(groupId)) {
                 out.printf("-- Users in group %s: empty\n", groupId);
+                return;
+            } else if (!members.get(groupId).contains(username)) {
+                out.println("Join group to access or group does not exist.");
                 return;
             }
 
@@ -304,6 +311,14 @@ public final class MessageBoardServer {
 
         // This method retrieves the contents of a message given its ID.
         private void getMessage(int messageId, PrintWriter out) {
+            if (!messages.containsKey(messageId)) {
+                out.println("No such message.");
+                return;
+            } else if (!members.get(messages.get(messageId).groupId).contains(username)) {
+                out.println("Join group to access.");
+                return;
+            }
+            
             if (messages.containsKey(messageId)) {
                 Message msg = messages.get(messageId);
                 for (String groupId : groupsJoined) {
