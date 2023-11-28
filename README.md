@@ -17,6 +17,15 @@ Executing the client script will automatically connect you to the server. After 
 username, you will be added to the public message board. At this point, you navigate the
 application with a series of commands. Type 'HELP' to see them. Alternatively, they're
 described below.
+- Use PUBLICPOST to post in the public message board.
+- Use JOIN to join any, or multiple, of 5 private groups.
+- Use POST to post in a private group.
+- Use GET to get the full contents of a post.
+- Use MEMBERS to see the members in any group you have joined.
+- Use HISTORY to see the recent chat history in any group you have joined.
+- Use LEAVE to leave a group.
+- Use DISCONNECT to disconnect from the server entirely.
+- Use HELP to see these instructions!
 
 ### Challenges
 The first major challenge we encountered in this project was getting started! Much of the
