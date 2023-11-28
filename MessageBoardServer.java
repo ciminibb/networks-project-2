@@ -5,14 +5,16 @@ import java.util.*;
 import java.text.SimpleDateFormat;
 
 public final class MessageBoardServer {
-    private static final ArrayList<PrintWriter> clientWriters = new ArrayList<>();
-    private static final Map<Integer, Message> messages = new HashMap<>();
-    private static final Set<String> activeUsers = Collections.synchronizedSet(new HashSet<>());
-    private static int messageID = 0;
-    private static final Map<String, String> groups = new HashMap<>();
-    private static final Map<String, ArrayList<String>> members = new HashMap<>();
-    private static final Map<String, Set<PrintWriter>> groupClients = new HashMap<>();
+    // Define data structures to manage state.
+    private static final ArrayList<PrintWriter> clientWriters = new ArrayList<>(); // Store client writers
+    private static final Map<Integer, Message> messages = new HashMap<>(); // Store messages by ID
+    private static final Set<String> activeUsers = Collections.synchronizedSet(new HashSet<>()); // Store active users
+    private static int messageID = 0; // Counter for message IDs
+    private static final Map<String, String> groups = new HashMap<>(); // Store group IDs and names
+    private static final Map<String, ArrayList<String>> members = new HashMap<>(); // Store group membership
+    private static final Map<String, Set<PrintWriter>> groupClients = new HashMap<>(); // Store clients in each group
 
+    // Main method is where the server application begins.
     public static void main(String[] args) {
         // Hardcode 5 groups + the default, public group.
         groups.put("0", "Message Board");
@@ -27,47 +29,56 @@ public final class MessageBoardServer {
         try (ServerSocket serverSocket = new ServerSocket(serverPort)) {
             System.out.println("-- Message Board Server started on port " + serverPort);
 
+            // Continuously listen for, and accept, incoming client connections.
             while (true) {
                 Socket clientSocket = serverSocket.accept();
 
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-                clientWriters.add(out);
+                clientWriters.add(out); // Add client writer to the list
                 ClientHandler clientHandler = new ClientHandler(clientSocket, out);
                 Thread clientThread = new Thread(clientHandler);
-                clientThread.start();
+                clientThread.start(); // Start handling client in a separate thread
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(); // Print exceptions in cases where they appear
         }
     }
 
+    // This class is called to handle individual client interactions.
     static class ClientHandler implements Runnable {
+        // Member variables for handling client interactions.
         private Socket clientSocket;
         private PrintWriter out;
         private String username;
         private ArrayList<String> groupsJoined = new ArrayList<>();
 
+        // Constructor.
         public ClientHandler(Socket clientSocket, PrintWriter out) {
             this.clientSocket = clientSocket;
             this.out = out;
         }
 
+        // Override run method for handling client interactions.
         @Override
         public void run() {
             try (
-                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));) {
+                // Finally, we define the code for handling client interactions.
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));) {
                 this.username = in.readLine();
                 activeUsers.add(username);
 
                 // All users are added to the public group upon connecting to the server.
                 joinGroup("0");
 
+                // Send the user introductory materials to get them oriented in the application.
                 out.println("");
                 sendGroupList();
                 out.println("");
                 out.println("-- Type 'HELP' to see the instruction set!");
                 out.println("");
 
+                // The following conditional structure communicates with the client to invoke
+                // necessary methods, given client inputs.
                 String inputLine;
                 while ((inputLine = in.readLine()) != null) {
                     if (inputLine.startsWith("JOIN:")) {
@@ -90,6 +101,7 @@ public final class MessageBoardServer {
             } catch (IOException e) {
                 System.out.println("ClientHandler exception: " + e.getMessage());
             } finally {
+                // At this point, we clean and close resources.
                 if (username != null && !username.isEmpty()) {
                     activeUsers.remove(username);
                 }
@@ -105,6 +117,7 @@ public final class MessageBoardServer {
             }
         }
 
+        // This method prints the available groups to a client.
         private void sendGroupList() {
             out.println("-- Available Groups:");
             for (Map.Entry<String, String> groupEntry : groups.entrySet()) {
@@ -115,6 +128,7 @@ public final class MessageBoardServer {
             }
         }
 
+        // This method prints the members of a specific group to the client.
         private void sendMemberList(String groupId) {
             if (!members.containsKey(groupId)) {
                 out.printf("-- Users in group %s: empty\n", groupId);
@@ -142,6 +156,7 @@ public final class MessageBoardServer {
             }
         }
 
+        // This method allows users to join multiple private groups, should they choose to.
         private void joinGroup(String groupsToJoinString) {
             // Move each comma-separated group to an array element.
             String[] groupsToJoinArray = groupsToJoinString.split(",");
@@ -187,10 +202,12 @@ public final class MessageBoardServer {
             }
         }
 
+        // This method allows users to leave multiple private groups, should they choose to.
         private void leaveGroup(String groupsToLeaveString) {
             // Move each comma-separated group to an array element.
             String[] groupsToLeaveArray = groupsToLeaveString.split(",");
 
+            boolean allGroupsValid = true;
             for (String dirtyGroup : groupsToLeaveArray) {
                 // "Clean" groups by removing whitespace.
                 String cleanGroup = dirtyGroup.trim();
@@ -225,13 +242,20 @@ public final class MessageBoardServer {
 
                     // Notify other members of the user leaving.
                     joinLeaveNotif(username, "left", cleanGroup);
+                } else {
+                    allGroupsValid = false;
                 }
             }
 
             // Wrap-up.
-            out.println("-- Successfully left groups " + groupsToLeaveString);
+            if (allGroupsValid) {
+                out.println("-- Successfully left groups " + groupsToLeaveString);
+            } else {
+                out.println("-- Cannot leave unjoined groups.");
+            }
         }
 
+        // This method is used to retrieve message history from a group.
         private void sendLastTwoMessages(String groupId) {
             List<String> groupMembers = members.get(groupId);
             if (groupMembers == null || !groupMembers.contains(username)) {
@@ -255,6 +279,7 @@ public final class MessageBoardServer {
             }
         }
 
+        // This method posts a message and can be invoked on either public or private groups.
         private void postMessage(String messageData) {
             String[] parts = messageData.split(":");
             if (parts.length < 3)
@@ -274,6 +299,7 @@ public final class MessageBoardServer {
             }
         }
 
+        // This method retrieves the contents of a message given its ID.
         private void getMessage(int messageId, PrintWriter out) {
             if (messages.containsKey(messageId)) {
                 Message msg = messages.get(messageId);
@@ -287,6 +313,7 @@ public final class MessageBoardServer {
             }
         }
 
+        // This method sends a message to only a specific group of users, those in a certain group.
         private void broadcastMessageInGroup(Message message, String groupId) {
             Set<PrintWriter> clientsInGroup = groupClients.get(groupId);
             if (clientsInGroup != null) {
@@ -296,6 +323,7 @@ public final class MessageBoardServer {
             }
         }
 
+        // This method notifies all relevant users of somebody having joined or left their group.
         private void joinLeaveNotif(String user, String action, String groupId) {
             // Set notification string.
             String notif = "User '" + user + "' " + action + " group " + groupId;
@@ -314,6 +342,7 @@ public final class MessageBoardServer {
             }
         }
 
+        // This method prints the application's instructions to the screen.
         private void printInstructions() {
             out.println("-- Type 'PUBLICPOST' to post on the public message board.");
             out.println("-- Type 'JOIN' to join a private group.");
@@ -326,7 +355,9 @@ public final class MessageBoardServer {
         }
     }
 
+    // The <Message> class is an ADT representing a post to the message board.
     static class Message {
+        // Attributes and constructor for the <Message> class.
         int id;
         String sender;
         String date;
@@ -343,10 +374,12 @@ public final class MessageBoardServer {
             this.groupId = groupId;
         }
 
+        // Method to get a formatted string representation of a message.
         public String getDisplayString() {
             return id + ", " + sender + ", " + date + ", " + subject + ", " + groupId;
         }
 
+        // Override toString method for the <Message> class.
         @Override
         public String toString() {
             return "Content: " + content;
