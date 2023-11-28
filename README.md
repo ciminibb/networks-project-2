@@ -11,6 +11,7 @@ you'll only need to do this once. A single server can sustain the application.
 
 Next, we'll launch a client. You may do this for as many clients as you desire. Again, if
 using a Windows machine, run the following command; if not, run the appropriate equivalent.
+A new command line is necessary for each client.
 - py Client_Python.py executes the file.
 
 Executing the client script will automatically connect you to the server. After entering a
