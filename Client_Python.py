@@ -81,8 +81,8 @@ class MessageBoardClient:
                 self.send_message(f"HISTORY:{group_id}")
             elif line.upper() == 'DISCONNECT':
                 # Disconnect from the server.
-                self.send_message("-- Disconnecting from the server.")
-                break
+                self.send_message("DISCONNECT")
+                break # Break out of the input handling loop to end the client's execution
             else:
                 # Prompt the user to ask for help if they enter an invalid command.
                 print("-- Type 'HELP' to see the instruction set!")
