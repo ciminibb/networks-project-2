@@ -27,6 +27,11 @@ described below.
 - Use DISCONNECT to disconnect from the server entirely.
 - Use HELP to see these instructions!
 
+There are a few more pieces of understanding to provide. First, the commands above aren't
+case-sensitive, you may enter them however you like! Also, any message from the server will
+be prefixed with dashes. Your chat feed, on the other hand, won't be. Messages in it are
+displayed in the following format: message number, username, datetime, subject, group number.
+
 ### Challenges
 The first major challenge we encountered in this project was getting started! Much of the
 complexity, as far as sockets are concerned, came at the beginning of our work. Being
