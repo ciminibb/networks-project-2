@@ -140,6 +140,9 @@ public final class MessageBoardServer {
             if (!members.containsKey(groupId)) {
                 out.printf("-- Users in group %s: empty\n", groupId);
                 return;
+            } else if (!members.get(groupId).contains(username)) {
+                out.println("Join group to access or group does not exist.");
+                return;
             }
 
             // Store the list of members locally, so it can be changed.
@@ -308,6 +311,14 @@ public final class MessageBoardServer {
 
         // This method retrieves the contents of a message given its ID.
         private void getMessage(int messageId, PrintWriter out) {
+            if (!messages.containsKey(messageId)) {
+                out.println("No such message.");
+                return;
+            } else if (!members.get(messages.get(messageId).groupId).contains(username)) {
+                out.println("Join group to access.");
+                return;
+            }
+            
             if (messages.containsKey(messageId)) {
                 Message msg = messages.get(messageId);
                 for (String groupId : groupsJoined) {

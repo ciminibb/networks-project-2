@@ -32,6 +32,7 @@ There are a few more pieces of understanding to provide. First, the commands abo
 case-sensitive, you may enter them however you like! Also, any message from the server will
 be prefixed with dashes. Your chat feed, on the other hand, won't be. Messages in it are
 displayed in the following format: message number, username, datetime, subject, group number.
+Lastly, 'group 0' is the public message board!
 
 ### Challenges
 The first major challenge we encountered in this project was getting started! Much of the
