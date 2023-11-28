@@ -96,6 +96,9 @@ public final class MessageBoardServer {
                         sendMemberList(inputLine.substring(8));
                     } else if (inputLine.startsWith("HISTORY:")) {
                         sendLastTwoMessages(inputLine.substring(8));
+                    } else if (inputLine.startsWith("DISCONNECT")) {
+                        out.println("-- Disconnecting from the server.");
+                        break; // Break the loop to exit the client handling thread
                     }
                 }
             } catch (IOException e) {
