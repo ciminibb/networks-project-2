@@ -2,7 +2,36 @@
 Ben Cimini, Blair Bowen, Stetson King
 
 ### Tutorial
-Instructions for running the application go here!
+To prepare the application, extract the contents of its ZIP file to a safe location. In a
+command line, change directory to that location. First, we'll launch the server. If using a
+Windows machine, run the following commands; if not, run your machine's equivalent. Note,
+you'll only need to do this once. A single server can sustain the application.
+- javac MessageBoardServer.java compiles the *.java file to a *.class file.
+- java MessageBoardServer executes the file.
+
+Next, we'll launch a client. You may do this for as many clients as you desire. Again, if
+using a Windows machine, run the following command; if not, run the appropriate equivalent.
+A new command line is necessary for each client.
+- py Client_Python.py executes the file.
+
+Executing the client script will automatically connect you to the server. After entering a
+username, you will be added to the public message board. At this point, you navigate the
+application with a series of commands. Type 'HELP' to see them. Alternatively, they're
+described below.
+- Use PUBLICPOST to post in the public message board.
+- Use JOIN to join any, or multiple, of 5 private groups.
+- Use POST to post in a private group.
+- Use GET to get the full contents of a post.
+- Use MEMBERS to see the members in any group you have joined.
+- Use HISTORY to see the recent chat history in any group you have joined.
+- Use LEAVE to leave a group.
+- Use DISCONNECT to disconnect from the server entirely.
+- Use HELP to see these instructions!
+
+There are a few more pieces of understanding to provide. First, the commands above aren't
+case-sensitive, you may enter them however you like! Also, any message from the server will
+be prefixed with dashes. Your chat feed, on the other hand, won't be. Messages in it are
+displayed in the following format: message number, username, datetime, subject, group number.
 
 ### Challenges
 The first major challenge we encountered in this project was getting started! Much of the
