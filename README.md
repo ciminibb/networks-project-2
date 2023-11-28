@@ -27,3 +27,12 @@ messages by group. This required a structural change to the message class, addin
 attribute. In response, we had to modify our post method and write a helper:
 broadcastMessageInGroup. Essentially, it leveraged a list of clientWriters to send the output
 through appropriate streams. All these solutions and more were necessary to make part 2 work!
+
+The last challenge I'd like to talk about came from a slight misinterpretation of the project.
+After we'd implemented part 2, part 1 was no longer available! That is, users could only
+post in private groups. We had to implement part 1... again. Our solution for this was quite
+clever. We included the public message board as a "hidden" group. It's hardcoded into the
+groups map, but never shown to users. Rather, they automatically join it upon connection with
+the server. Therefore, by default, any user can send a public message. Since it's a group,
+though, users who don't wish to see public messages may still leave it. We ended up with a
+better implementation on account of the misinterpretation, I believe. 
