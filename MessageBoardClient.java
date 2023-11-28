@@ -13,13 +13,11 @@ public class MessageBoardClient {
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             Scanner scanner = new Scanner(System.in)
         ) {
-            System.out.print("Enter your username: ");
+            System.out.print("-- Enter your username: ");
             String username = scanner.nextLine();
             out.println(username);
 
-            System.out.println("You are now connected to the message board.");
-            System.out.println("Type 'JOIN' to join a group, 'POST' to write a message, or 'GET' to retrieve one.");
-            System.out.println("");
+            System.out.println("-- You are now connected to the message board.");
 
             Thread receiveThread = new Thread(() -> {
                 try {
@@ -36,23 +34,44 @@ public class MessageBoardClient {
             while (true) {
                 String line = scanner.nextLine();
                 if (line.equalsIgnoreCase("GET")) {
-                    System.out.print("Enter message ID: ");
+                    System.out.print("-- Enter message ID: ");
                     String id = scanner.nextLine();
                     out.println("GET_MESSAGE:" + id);
                 } else if (line.equalsIgnoreCase("POST")) {
-                    System.out.print("Enter group ID for the message: ");
+                    System.out.print("-- Enter group ID for the message: ");
                     String groupId = scanner.nextLine();
-                    System.out.print("Enter message subject: ");
+                    System.out.print("-- Enter message subject: ");
                     String subject = scanner.nextLine();
-                    System.out.print("Enter message content: ");
+                    System.out.print("-- Enter message content: ");
                     String content = scanner.nextLine();
                     out.println("POST_MESSAGE:" + groupId + ":" + subject + ":" + content);
                 } else if (line.equalsIgnoreCase("JOIN")) {
-                    System.out.print("Enter comma-separated groups: ");
+                    System.out.print("-- Enter comma-separated groups: ");
                     String groups = scanner.nextLine();
                     out.println("JOIN:" + groups);
+                } else if (line.equalsIgnoreCase("PUBLICPOST")) {
+                    String groupId = "0";
+                    System.out.print("-- Enter message subject: ");
+                    String subject = scanner.nextLine();
+                    System.out.print("-- Enter message content: ");
+                    String content = scanner.nextLine();
+                    out.println("POST_MESSAGE:" + groupId + ":" + subject + ":" + content);
+                } else if (line.equalsIgnoreCase("HELP")) {
+                    out.println("HELP");
+                } else if (line.equalsIgnoreCase("LEAVE")) {
+                    System.out.print("-- Enter comma-separated groups: ");
+                    String groups = scanner.nextLine();
+                    out.println("LEAVE:" + groups);
+                } else if (line.equalsIgnoreCase("MEMBERS")) {
+                    System.out.print("-- Enter group ID to see its members: ");
+                    String groupId = scanner.nextLine();
+                    out.println("MEMBERS:" + groupId);
+                } else if (line.equalsIgnoreCase("HISTORY")) {
+                    System.out.print("-- Enter group ID to see its history: ");
+                    String groupId = scanner.nextLine();
+                    out.println("HISTORY:" + groupId);
                 } else {
-                    System.out.println("Type 'JOIN' to join a group, 'POST' to write a message, or 'GET' to retrieve one.");
+                    System.out.println("-- Type 'HELP' to see the instruction set!");
                 }
             }
         } catch (IOException e) {
