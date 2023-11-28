@@ -2,7 +2,21 @@
 Ben Cimini, Blair Bowen, Stetson King
 
 ### Tutorial
-Instructions for running the application go here!
+To prepare the application, extract the contents of its ZIP file to a safe location. In a
+command line, change directory to that location. First, we'll launch the server. If using a
+Windows machine, run the following commands; if not, run your machine's equivalent. Note,
+you'll only need to do this once. A single server can sustain the application.
+- javac MessageBoardServer.java compiles the *.java file to a *.class file.
+- java MessageBoardServer executes the file.
+
+Next, we'll launch a client. You may do this for as many clients as you desire. Again, if
+using a Windows machine, run the following command; if not, run the appropriate equivalent.
+- py Client_Python.py executes the file.
+
+Executing the client script will automatically connect you to the server. After entering a
+username, you will be added to the public message board. At this point, you navigate the
+application with a series of commands. Type 'HELP' to see them. Alternatively, they're
+described below.
 
 ### Challenges
 The first major challenge we encountered in this project was getting started! Much of the
